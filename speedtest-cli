@@ -82,8 +82,6 @@ def downloadSpeed(files):
             thread = FileGetter(file, start)
             thread.start()
             q.put(thread, True)
-            sys.stdout.write('.')
-            sys.stdout.flush()
 
     finished = []
 
@@ -138,8 +136,6 @@ def uploadSpeed(url, sizes):
             thread = FilePutter(url, start, size)
             thread.start()
             q.put(thread, True)
-            sys.stdout.write('.')
-            sys.stdout.flush()
 
     finished = []
 
@@ -244,13 +240,12 @@ def getBestServer(servers):
 def speedtest():
     """Run the full speedtest.net test"""
 
-    print 'Retrieving speedtest.net configuration...'
+    print time.strftime("%Y/%m/%d %H:%M:%S", time.localtime())
+
     config = getConfig()
 
-    print 'Retrieving speedtest.net server list...'
     servers = closestServers(config['client'])
 
-    print 'Selecting best server based on ping...'
     best = getBestServer(servers)
     print 'Hosted by %(sponsor)s (%(name)s): %(latency)sms' % best
 
@@ -260,55 +255,20 @@ def speedtest():
         for i in xrange(0, 4):
             urls.append('%s/random%sx%s.jpg' %
                         (os.path.dirname(best['url']), size, size))
-    print 'Testing download speed',
     dlspeed = downloadSpeed(urls)
-    print '\nDownload: %s Mbit/s' % round((dlspeed / 1024 / 1024) * 8, 2)
+    print 'Down: %s Mbit/s' % round((dlspeed / 1024 / 1024) * 8, 2)
 
     sizesizes = [int(.25 * 1024 * 1024), int(.5 * 1024 * 1024)]
     sizes = []
     for size in sizesizes:
         for i in xrange(0, 25):
             sizes.append(size)
-    print 'Testing upload speed',
     ulspeed = uploadSpeed(best['url'], sizes)
-    print '\nUpload speed: %s Mbit/s' % round((ulspeed / 1024 / 1024) * 8, 2)
+    print 'Up: %s Mbit/s' % round((ulspeed / 1024 / 1024) * 8, 2)
 
     dlspeedk = int(round((dlspeed / 1024) * 8, 0))
     ping = int(round(best['latency'], 0))
     ulspeedk = int(round((ulspeed / 1024) * 8, 0))
-
-    apiData = [
-        'download=%s' % dlspeedk,
-        'ping=%s' % ping,
-        'upload=%s' % ulspeedk,
-        'promo=',
-        'startmode=%s' % 'pingselect',
-        'recommendedserverid=%s' % best['id'],
-        'accuracy=%s' % 1,
-        'serverid=%s' % best['id'],
-        'hash=%s' % md5('%s-%s-%s-%s' %
-                        (ping, ulspeedk, dlspeedk, '297aae72')
-                        ).hexdigest()]
-
-    req = urllib2.Request('http://www.speedtest.net/api/api.php',
-                          data='&'.join(apiData))
-    req.add_header('Referer', 'http://c.speedtest.net/flash/speedtest.swf')
-    f = urllib2.urlopen(req)
-    response = f.read()
-    code = f.code
-    f.close()
-
-    if int(code) != 200:
-        print 'Could not submit results to speedtest.net'
-        sys.exit(1)
-
-    qsargs = parse_qs(response)
-    resultid = qsargs.get('resultid')
-    if not resultid or len(resultid) != 1:
-        print 'Could not submit results to speedtest.net'
-        sys.exit(1)
-
-    print 'Share results: http://www.speedtest.net/result/%s.png' % resultid[0]
 
 if __name__ == '__main__':
     speedtest()
