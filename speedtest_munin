@@ -1,0 +1,19 @@
+#!/bin/sh
+
+case $1 in
+   config)
+        cat <<'EOM'
+graph_category network
+graph_title Speed test
+graph_args --base 1024
+graph_vlabel DL (MB/s)
+down.label down
+up.label up
+EOM
+        exit 0;;
+esac
+
+echo -n "down.value "
+cat /home/pi/speedtest-cli/lastrun | grep Down | sed 's/^.*: //' | sed 's/ .*$//'
+echo -n "up.value "
+cat /home/pi/speedtest-cli/lastrun | grep Up | sed 's/^.*: //' | sed 's/ .*$//'
